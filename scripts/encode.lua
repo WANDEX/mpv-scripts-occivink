@@ -41,14 +41,6 @@ function get_extension(path)
 end
 
 function get_output_string(dir, format, input, extension, title, from, to, profile)
-    local res = utils.readdir(dir)
-    if not res then
-        return nil
-    end
-    local files = {}
-    for _, f in ipairs(res) do
-        files[f] = true
-    end
     local output = format
     output = string.gsub(output, "$f", input)
     output = string.gsub(output, "$t", title)
@@ -57,6 +49,21 @@ function get_output_string(dir, format, input, extension, title, from, to, profi
     output = string.gsub(output, "$d", seconds_to_time_string(to-from, true))
     output = string.gsub(output, "$x", extension)
     output = string.gsub(output, "$p", profile)
+    output = string.gsub(output, "%s+", "_") -- replace spaces with underscore
+    joined_dirs = utils.join_path(dir, output:match("(.*[/\\])")) -- exclude file from path
+    -- get only basename (file name) (in case if output contained subdirs)
+    output = string.gsub(output, "(.*/)(.*)", "%2")
+    -- create dir and sub dirs if output/format contains one '/' or more.
+    -- insert quotes around path (to allow special characters in path)
+    os.execute("mkdir -p " .. string.format("%q", joined_dirs))
+    local res = utils.readdir(joined_dirs)
+    if not res then
+        return nil
+    end
+    local files = {}
+    for _, f in ipairs(res) do
+        files[f] = true
+    end
     if ON_WINDOWS then
         output = string.gsub(output, ":", "_")
     end
@@ -201,10 +208,10 @@ function start_encoding(from, to, settings)
     local extension = get_extension(path)
     local output_name = get_output_string(output_directory, settings.output_format, input_name, extension, title, from, to, settings.profile)
     if not output_name then
-        mp.osd_message("Invalid path " .. output_directory)
+        mp.osd_message("Invalid path " .. joined_dirs)
         return
     end
-    args[#args + 1] = utils.join_path(output_directory, output_name)
+    args[#args + 1] = utils.join_path(joined_dirs, output_name)
 
     if settings.print then
         local o = ""
