@@ -157,39 +157,57 @@ function start_encoding(from, to, settings)
     local track_args = {}
     local start = seconds_to_time_string(from, false)
     local input_index = 0
-    for input_path, tracks in pairs(get_input_info(path, settings.only_active_tracks)) do
-       append_args({
-            "-ss", start,
-            "-i", input_path,
-        })
-        if settings.only_active_tracks then
-            for _, track_index in ipairs(tracks) do
-                track_args = append_table(track_args, { "-map", string.format("%d:%d", input_index, track_index)})
+    -- calculate how many substrings in path
+    _, count = path:gsub("http", '')
+    if count > 1 then
+        -- for youtube-dl: youtube video + audio glued streams (that needs at least two -i flags)
+        -- following ignores many parameters from settings
+        for input_path, tracks in pairs(get_input_info(path, settings.only_active_tracks)) do
+            for url in string.gmatch(input_path, "http[^;]+") do
+                -- each url requires it's own -i flag and start timing
+                append_args({"-ss", start})
+                append_args({"-i", tostring(url)})
+                -- -map flag not needed there is already separate audio and video url
             end
-        else
-            track_args = append_table(track_args, { "-map", tostring(input_index)})
         end
-        input_index = input_index + 1
-    end
-
-    append_args({"-to", tostring(to-from)})
-    append_args(track_args)
-
-    -- apply some of the video filters currently in the chain
-    local filters = {}
-    if settings.preserve_filters then
-        filters = get_video_filters()
-    end
-    if settings.append_filter ~= "" then
-        filters[#filters + 1] = settings.append_filter
-    end
-    if #filters > 0 then
-        append_args({ "-filter:v", table.concat(filters, ",") })
-    end
-
-    -- split the user-passed settings on whitespace
-    for token in string.gmatch(settings.codec, "[^%s]+") do
-        args[#args + 1] = token
+        append_args({"-to", tostring(to-from)})
+        -- flags to downscale to fullhd if source > 1080
+        -- -vf scale=-1:1080 -c:v libx264 -crf 18 -c:a copy
+        append_args({"-filter:v", tostring("scale=-1:1080")})
+        append_args({"-c:v", tostring("libx264")})
+        append_args({"-crf", tostring("18")})
+        append_args({"-c:a", tostring("copy")})
+    else
+        --[do not touch] default for one -i in path
+        for input_path, tracks in pairs(get_input_info(path, settings.only_active_tracks)) do
+            append_args({"-ss", start})
+            append_args({"-i", input_path})
+            if settings.only_active_tracks then
+                for _, track_index in ipairs(tracks) do
+                    track_args = append_table(track_args, { "-map", string.format("%d:%d", input_index, track_index)})
+                end
+            else
+                track_args = append_table(track_args, { "-map", tostring(input_index)})
+            end
+            input_index = input_index + 1
+        end
+        append_args({"-to", tostring(to-from)})
+        append_args(track_args)
+        -- apply some of the video filters currently in the chain
+        local filters = {}
+        if settings.preserve_filters then
+            filters = get_video_filters()
+        end
+        if settings.append_filter ~= "" then
+            filters[#filters + 1] = settings.append_filter
+        end
+        if #filters > 0 then
+            append_args({ "-filter:v", table.concat(filters, ",") })
+        end
+        -- split the user-passed settings on whitespace
+        for token in string.gmatch(settings.codec, "[^%s]+") do
+            args[#args + 1] = token
+        end
     end
 
     -- path of the output
