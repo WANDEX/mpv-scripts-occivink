@@ -236,7 +236,8 @@ function start_encoding(from, to, settings)
         mp.osd_message("Invalid path " .. joined_dirs)
         return
     end
-    args[#args + 1] = utils.join_path(joined_dirs, output_name)
+    local out_path = utils.join_path(joined_dirs, output_name)
+    args[#args + 1] = out_path
 
     if settings.print then
         local o = ""
