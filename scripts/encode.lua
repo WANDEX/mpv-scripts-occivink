@@ -170,18 +170,20 @@ function start_encoding(from, to, settings)
         for input_path, tracks in pairs(get_input_info(path, settings.only_active_tracks)) do
             for url in string.gmatch(input_path, "http[^;]+") do
                 -- each url requires it's own -i flag and start timing
-                append_args({"-ss", start})
+                -- '-ss' introduces audio desync if after '-i'
+                append_args({"-ss", tostring(start)})
                 append_args({"-i", tostring(url)})
                 -- -map flag not needed there is already separate audio and video url
             end
         end
         append_args({"-to", tostring(to-from)})
-        -- flags to downscale to fullhd if source > 1080
-        -- -vf scale=-1:1080 -c:v libx264 -crf 18 -c:a copy
-        append_args({"-filter:v", tostring("scale=-1:1080")})
+        -- downscale to fullhd if source > 1080
+        append_args({"-filter:v", tostring("scale=-2:1080")})
         append_args({"-c:v", tostring("libx264")})
         append_args({"-crf", tostring("18")})
         append_args({"-c:a", tostring("copy")})
+        append_args({"-c:s", tostring("copy")})
+        append_args({"-fflags", tostring("+igndts")})
     else
         --[do not touch] default for one -i in path
         for input_path, tracks in pairs(get_input_info(path, settings.only_active_tracks)) do
