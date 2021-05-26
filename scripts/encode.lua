@@ -249,12 +249,23 @@ function start_encoding(from, to, settings)
         end
         print(o)
     end
+
+    -- notify cmd
+    local n_exe = "notify-send"
+    local n_summary = "'[encode.lua] [ENCODEME] [STARTED]'"
+    local n_body = string.format("'%s\n(%s)\n'", title, out_path)
+    local n_full_cmd = string.format("%s %s %s", n_exe, n_summary, n_body)
+    --local str_args = table.concat(args, ' ')
+    --local n_full_test = string.format("%s %s %s'%s'", n_exe, n_summary, n_body, str_args)
+
     if settings.detached then
+        os.execute(n_full_cmd) -- notify that encoding process started
         utils.subprocess_detached({ args = args })
     else
         local res = utils.subprocess({ args = args, max_size = 0, cancellable = false })
         if res.status == 0 then
-            mp.osd_message("Finished encoding succesfully")
+            mp.osd_message("Finished encoding successfully")
+            os.execute(n_full_cmd) -- notify
         else
             mp.osd_message("Failed to encode, check the log")
         end
