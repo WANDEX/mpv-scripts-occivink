@@ -42,6 +42,11 @@ end
 
 function get_output_string(dir, format, input, extension, title, from, to, profile)
     local output = format
+    if title then
+        output = string.gsub(output, "$h", title)
+    else
+        output = string.gsub(output, "$h", input)
+    end
     output = string.gsub(output, "$f", input)
     output = string.gsub(output, "$t", title)
     output = string.gsub(output, "$s", seconds_to_time_string(from, true))
