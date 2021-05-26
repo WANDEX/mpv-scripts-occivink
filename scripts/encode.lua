@@ -355,4 +355,4 @@ function set_timestamp(profile)
     end
 end
 
-mp.add_key_binding(nil, "set-timestamp", set_timestamp)
+mp.add_forced_key_binding("K", "set-timestamp", set_timestamp)
