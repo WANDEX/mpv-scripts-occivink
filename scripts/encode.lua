@@ -329,15 +329,17 @@ function set_timestamp(profile)
         -- include the current frame into the extract
         local fps = mp.get_property_number("container-fps") or 30
         to = to + 1 / fps / 2
+        --:TODO :FIXME settings doesn't read from .config file in script-opts
         local settings = {
             detached = true,
             container = "",
-            only_active_tracks = false,
+            only_active_tracks = true,
             preserve_filters = true,
             append_filter = "",
-            codec = "-an -sn -c:v libvpx -crf 10 -b:v 1000k",
-            output_format = "$f_$n.webm",
-            output_directory = "",
+            --source quality without re-encoding
+            codec = "-c copy",
+            output_format = "$h/$h_$n.$x",
+            output_directory = "~/Films/.mpv_encode/source",
             ffmpeg_command = "ffmpeg",
             print = true,
         }
